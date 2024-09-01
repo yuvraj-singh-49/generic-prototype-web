@@ -35,13 +35,12 @@ Follow the steps below to set up and run the project on your local machine:
 
 1. **Clone this repository**:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/yuvraj-singh-49/generic-prototype-web.git
    ```
-   Replace `<repository-url>` with the URL of the repository.
 
 2. **Navigate to the project directory**:
    ```bash
-   cd <project-directory>
+   cd generic-prototype-web
    ```
 
 3. **Install the dependencies**:
