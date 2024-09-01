@@ -63,4 +63,4 @@ If you'd like to contribute to this project, please fork the repository, create 
 
 ### License
 
-This project is licensed under the MIT License - see the [LICENSE](../../../Downloads/LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](../../../generic-prototype-web/blob/main/LICENSE) file for details.
