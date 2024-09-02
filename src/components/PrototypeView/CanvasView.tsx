@@ -15,6 +15,8 @@ import {
   Button,
   Divider,
   CircularProgress,
+  Checkbox,
+  ListItemIcon,
 } from "@mui/material";
 import Toast from "../Toast";
 import { extractParts, getFileType } from "../../common/methods";
@@ -76,8 +78,9 @@ const AutoFitCamera: React.FC<{ models: Model[] }> = ({ models }) => {
 // Component to render a model with its parts
 const ModelComponent: React.FC<{
   model: Model;
-  selectedPartName: string | null;
-}> = ({ model, selectedPartName }) => {
+  selectedParts: string[];
+  hoveredPartName: string | null;
+}> = ({ model, selectedParts, hoveredPartName }) => {
   return (
     <group>
       {model.parts.map((part, index) => (
@@ -85,9 +88,11 @@ const ModelComponent: React.FC<{
           key={index}
           geometry={part.geometry as any}
           material={
-            part.name === selectedPartName
-              ? new THREE.MeshStandardMaterial({ color: 0xff0000 }) // Highlight selected part
-              : part.material // Use original material for non-selected parts
+            selectedParts.includes(part.name)
+              ? new THREE.MeshStandardMaterial({ color: 0xff0000 }) // Highlight selected parts
+              : part.name === hoveredPartName
+              ? new THREE.MeshStandardMaterial({ color: 0xffff00 }) // Highlight hovered part
+              : part.material // Use original material for non-selected and non-hovered parts
           }
         />
       ))}
@@ -107,7 +112,8 @@ const CanvasView: React.FC<CanvasViewProps> = ({
   const [fileSaved, setFileSaved] = useState(false);
   const [models, setModels] = useState<Model[]>([]);
   const [bom, setBom] = useState<Record<string, number>>({});
-  const [selectedPart, setSelectedPart] = useState<string | null>(null);
+  const [selectedParts, setSelectedParts] = useState<string[]>([]);
+  const [hoveredPart, setHoveredPart] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -147,6 +153,14 @@ const CanvasView: React.FC<CanvasViewProps> = ({
       loadModels();
     }
   }, [fileUrlList]);
+
+  const handleToggleSelection = (partName: string) => {
+    setSelectedParts((prevSelectedParts) =>
+      prevSelectedParts.includes(partName)
+        ? prevSelectedParts.filter((name) => name !== partName)
+        : [...prevSelectedParts, partName]
+    );
+  };
 
   const handleRenderingSave = async () => {
     const data = JSON.stringify({
@@ -230,9 +244,7 @@ const CanvasView: React.FC<CanvasViewProps> = ({
               Save this Rendering
             </Button>
           </Paper>
-        ) : (
-          <></>
-        )}
+        ) : null}
 
         {!loading && models.length > 0 && (
           <>
@@ -262,8 +274,10 @@ const CanvasView: React.FC<CanvasViewProps> = ({
                 <ListItem
                   button
                   key={`${modelIndex}-${partIndex}`}
-                  selected={part.name === selectedPart}
-                  onClick={() => setSelectedPart(part.name)}
+                  selected={selectedParts.includes(part.name)}
+                  onClick={() => handleToggleSelection(part.name)}
+                  onMouseEnter={() => setHoveredPart(part.name)}
+                  onMouseLeave={() => setHoveredPart(null)}
                   sx={{
                     borderRadius: 1,
                     marginBottom: 1,
@@ -274,8 +288,19 @@ const CanvasView: React.FC<CanvasViewProps> = ({
                     "&.Mui-selected:hover": {
                       backgroundColor: "#cc2a2a",
                     },
+                    "&:hover": {
+                      backgroundColor: "#f0f0f0",
+                    },
                   }}
                 >
+                  <ListItemIcon>
+                    <Checkbox
+                      edge="start"
+                      checked={selectedParts.includes(part.name)}
+                      tabIndex={-1}
+                      disableRipple
+                    />
+                  </ListItemIcon>
                   <ListItemText primary={part.name} sx={{ fontWeight: 500 }} />
                 </ListItem>
               ))
@@ -294,7 +319,8 @@ const CanvasView: React.FC<CanvasViewProps> = ({
             <ModelComponent
               key={index}
               model={model}
-              selectedPartName={selectedPart}
+              selectedParts={selectedParts}
+              hoveredPartName={hoveredPart}
             />
           ))}
           <OrbitControls />

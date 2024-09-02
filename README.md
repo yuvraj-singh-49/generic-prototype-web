@@ -11,7 +11,7 @@ This repository is used to generate prototypes to visualize individual component
 - **Three.js**: A 3D library that makes WebGL simpler and easier to use.
   - Documentation: [Three.js Documentation](https://threejs.org/docs/#manual/en/introduction/Creating-a-scene)
 - **Redux Toolkit**: A toolset for efficient Redux development.
-  - Documentation: [Redux Toolkit Documentation](https://redux-toolkit.js.org/introduction/getting-started)
+  - Documentation: [Redux Toolkit Documentation](https://redux-toolkit.js.org/introduction/getting-started) (TODO)
 
 ## Features
 
