@@ -120,7 +120,7 @@ const PreviousRenders: React.FC = () => {
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
-        Previous Renders
+        Previous Prototypes
       </Typography>
       <List
         style={{
