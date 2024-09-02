@@ -1,13 +1,27 @@
 import React, { useEffect, useState } from "react";
-import { Box, Typography, List, Paper, Divider, Button } from "@mui/material";
+import {
+  Box,
+  Typography,
+  List,
+  Paper,
+  Divider,
+  Button,
+  IconButton,
+} from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
 import BomTable from "./BomTable";
 import PrototypeView from "./PrototypeView";
 import axiosApi from "../app/config";
+import DeleteConfirmationDialog from "./DeleteConfirmationDialog"; // Import the dialog component
+import Toast from "./Toast";
 
 const PreviousRenders: React.FC = () => {
   const [previousRenders, setPreviousRenders] = useState([]);
   const [previousRenderOpen, setPreviousRenderOpen] = useState(false);
-  const [fileUrlList, setFileUrlList] = useState(false);
+  const [fileUrlList, setFileUrlList] = useState<string[]>([]);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [renderToDelete, setRenderToDelete] = useState<any>(null);
+  const [toastOpen, setToastOpen] = useState(false);
 
   useEffect(() => {
     const renderTable = async () => {
@@ -30,9 +44,46 @@ const PreviousRenders: React.FC = () => {
     }, 0);
   };
 
+  const handleOpenDeleteDialog = (render: any) => {
+    setRenderToDelete(render);
+    setOpenDeleteDialog(true);
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setOpenDeleteDialog(false);
+    setRenderToDelete(null);
+  };
+
+  const handleDelete = async () => {
+    if (!renderToDelete) return;
+
+    try {
+      const response = await axiosApi().delete(
+        `/api/delete/${renderToDelete._id}`
+      );
+      if (response?.status === 200) {
+        setToastOpen(true);
+        setPreviousRenders((prevRenders) =>
+          prevRenders.filter(
+            (render) => (render as any)._id !== renderToDelete._id
+          )
+        );
+        handleCloseDeleteDialog();
+      } else {
+        console.error("Failed to delete the render.");
+      }
+    } catch (error) {
+      console.error("An error occurred while deleting the render.", error);
+    }
+  };
+
   if (previousRenderOpen) {
     return <PrototypeView isCanvasViewOpen={true} fileUrlList={fileUrlList} />;
   }
+
+  const handleClose = () => {
+    setToastOpen(false);
+  };
 
   return (
     <Box>
@@ -55,9 +106,9 @@ const PreviousRenders: React.FC = () => {
               padding: 2,
               borderRadius: 2,
               width: "70%",
-              backgroundColor: "#f5f5f5",
+              backgroundColor: "#f9f9f9",
               "&:hover": {
-                backgroundColor: "#e0e0e0",
+                backgroundColor: "#f1f1f1",
               },
             }}
           >
@@ -68,6 +119,7 @@ const PreviousRenders: React.FC = () => {
                     display: "flex",
                     flexDirection: "row",
                     justifyContent: "space-between",
+                    alignItems: "center",
                   }}
                 >
                   <div>
@@ -78,19 +130,41 @@ const PreviousRenders: React.FC = () => {
                       {render.name}
                     </Typography>
 
-                    <Typography variant="body2" sx={{ color: "#666" }}>
+                    <Typography variant="body2" sx={{ color: "#888" }}>
                       Rendered on:{" "}
                       {new Date(render.createdOn).toLocaleDateString()}
                     </Typography>
                   </div>
 
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => renderCanvas(render)}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "32px",
+                    }}
                   >
-                    Render
-                  </Button>
+                    <Button
+                      onClick={() => renderCanvas(render)}
+                      color="primary"
+                      variant="outlined"
+                      sx={{ borderRadius: "20px", padding: "6px 20px" }}
+                    >
+                      Render
+                    </Button>
+                    <IconButton
+                      color="error"
+                      onClick={() => handleOpenDeleteDialog(render)}
+                      sx={{
+                        backgroundColor: "#f44336",
+                        color: "#fff",
+                        "&:hover": {
+                          backgroundColor: "#d32f2f",
+                        },
+                      }}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </div>
                 </div>
 
                 <Divider sx={{ marginY: 2 }} />
@@ -100,6 +174,20 @@ const PreviousRenders: React.FC = () => {
           </Paper>
         ))}
       </List>
+
+      <DeleteConfirmationDialog
+        open={openDeleteDialog}
+        onClose={handleCloseDeleteDialog}
+        onDelete={handleDelete}
+        renderName={renderToDelete?.name}
+      />
+
+      <Toast
+        open={toastOpen}
+        message="Render Deleted Successfully!"
+        severity="success"
+        handleClose={handleClose}
+      />
     </Box>
   );
 };

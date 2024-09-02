@@ -266,7 +266,7 @@ const CanvasView: React.FC<CanvasViewProps> = ({ fileUrlList }) => {
 
       <Toast
         open={toastOpen}
-        message="Data Saved Successfully!"
+        message="Render Saved Successfully!"
         severity="success"
         handleClose={handleClose}
       />
