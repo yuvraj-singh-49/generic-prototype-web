@@ -32,9 +32,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   const { getRootProps, getInputProps } = useDropzone({
     accept: {
-      "application/step": [".step", ".stp"], // MIME type for STEP files
       "application/sla": [".stl"], // MIME type for STL files
       "application/octet-stream": [".fbx"], // MIME type for FBX files
+      "application/obj": [".obj"], // MIME type for OBJ files
     },
     onDrop: async (
       acceptedFiles: File[],
@@ -99,10 +99,10 @@ const FileUpload: React.FC<FileUploadProps> = ({
         <input {...getInputProps()} webkitdirectory="true" directory="true" />
         <CloudUploadIcon sx={{ fontSize: 60, color: "#0d47a1" }} />
         <Typography variant="h6" sx={{ marginTop: 2, fontWeight: 500 }}>
-          Drag & Drop files or folders here, or click to select files
+          Click or drag to upload your 3D models
         </Typography>
         <Typography variant="body2" sx={{ marginTop: 1, color: "#0d47a1" }}>
-          Accepted formats: STEP, STL, FBX
+          Accepted formats: STL, OBJ and FBX
         </Typography>
 
         {uploading && <CircularProgress sx={{ marginTop: 3 }} />}

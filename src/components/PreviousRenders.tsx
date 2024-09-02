@@ -7,7 +7,7 @@ import axiosApi from "../app/config";
 const PreviousRenders: React.FC = () => {
   const [previousRenders, setPreviousRenders] = useState([]);
   const [previousRenderOpen, setPreviousRenderOpen] = useState(false);
-  const [fileUrlDataVal, setFileUrlDataVal] = useState(false);
+  const [fileUrlList, setFileUrlList] = useState(false);
 
   useEffect(() => {
     const renderTable = async () => {
@@ -24,16 +24,14 @@ const PreviousRenders: React.FC = () => {
   }, []);
 
   const renderCanvas = (render: any) => {
-    setFileUrlDataVal(render?.fileUrlData);
+    setFileUrlList(render?.fileUrlList);
     setTimeout(() => {
       setPreviousRenderOpen(true);
     }, 0);
   };
 
   if (previousRenderOpen) {
-    return (
-      <PrototypeView isCanvasViewOpen={true} fileUrlDataVal={fileUrlDataVal} />
-    );
+    return <PrototypeView isCanvasViewOpen={true} fileUrlList={fileUrlList} />;
   }
 
   return (
@@ -41,7 +39,13 @@ const PreviousRenders: React.FC = () => {
       <Typography variant="h4" gutterBottom>
         Previous Renders
       </Typography>
-      <List>
+      <List
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
         {previousRenders.map((render: any) => (
           <Paper
             key={render._id}

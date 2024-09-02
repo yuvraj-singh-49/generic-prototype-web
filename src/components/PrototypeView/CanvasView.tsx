@@ -4,9 +4,6 @@ import React, { useState, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
-import { STLLoader } from "three/examples/jsm/loaders/STLLoader";
-import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
-import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader";
 import {
   Box,
   List,
@@ -26,7 +23,6 @@ import {
 import axios from "axios";
 import Toast from "../Toast";
 import { extractParts, getFileType } from "../../common/methods";
-import BomTable from "../BomTable";
 import axiosApi from "../../app/config";
 
 // Define types for part and model
@@ -43,8 +39,7 @@ interface Model {
 }
 
 interface CanvasViewProps {
-  fileUrlData: any;
-  onContinue: () => void;
+  fileUrlList: any;
 }
 
 // Component to render a model with its parts
@@ -69,7 +64,7 @@ const Model: React.FC<{ model: Model; selectedPartName: string | null }> = ({
   );
 };
 
-const CanvasView: React.FC<ModelViewerProps> = ({ fileUrlData }) => {
+const CanvasView: React.FC<CanvasViewProps> = ({ fileUrlList }) => {
   const [toastOpen, setToastOpen] = useState(false);
   const [models, setModels] = useState<Model[]>([]);
   const [bom, setBom] = useState<Record<string, number>>({});
@@ -80,7 +75,7 @@ const CanvasView: React.FC<ModelViewerProps> = ({ fileUrlData }) => {
       const loadedModels: Model[] = [];
       let completeBom: Record<string, number> = {};
 
-      for (const fileName of fileUrlData) {
+      for (const fileName of fileUrlList) {
         const fileType = getFileType(fileName);
 
         try {
@@ -109,7 +104,7 @@ const CanvasView: React.FC<ModelViewerProps> = ({ fileUrlData }) => {
     const data = JSON.stringify({
       name: "Render No. " + parseInt(Math.random() * 10000),
       bom: bom,
-      fileUrlData: fileUrlData,
+      fileUrlList: fileUrlList,
       createdOn: new Date(),
     });
 
@@ -170,7 +165,7 @@ const CanvasView: React.FC<ModelViewerProps> = ({ fileUrlData }) => {
           gutterBottom
           sx={{ fontWeight: 700, color: "#333" }}
         >
-          Interaction Elements
+          Bill of Materials
         </Typography>
         <Divider sx={{ marginBottom: 2 }} />
         <List>
@@ -198,15 +193,6 @@ const CanvasView: React.FC<ModelViewerProps> = ({ fileUrlData }) => {
             ))
           )}
         </List>
-        <Typography
-          variant="h5"
-          gutterBottom
-          sx={{ fontWeight: 700, color: "#333", marginTop: 3 }}
-        >
-          Bill of Materials
-        </Typography>
-        <Divider sx={{ marginBottom: 2 }} />
-        <BomTable bom={bom} />
       </Box>
 
       <Box width="80%" bgcolor="#000000">

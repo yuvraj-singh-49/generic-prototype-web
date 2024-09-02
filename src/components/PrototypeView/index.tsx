@@ -4,25 +4,25 @@ import CanvasView from "./CanvasView";
 
 interface PrototypeViewProps {
   isCanvasViewOpen?: boolean;
-  fileUrlDataVal?: any;
+  fileUrlList?: any;
 }
 
 const PrototypeView: React.FC<PrototypeViewProps> = ({
   isCanvasViewOpen,
-  fileUrlDataVal,
+  fileUrlList,
 }) => {
-  const [fileUrlData, setFileUrlData] = useState(fileUrlDataVal ?? {});
+  const [fileUrlListData, setFileUrlListData] = useState(fileUrlList ?? {});
   const [canvasViewOpen, setCanvasViewOpen] = useState(
     isCanvasViewOpen ?? false
   );
 
   if (canvasViewOpen) {
-    return <CanvasView fileUrlData={fileUrlData} />;
+    return <CanvasView fileUrlList={fileUrlListData}  />;
   }
 
   return (
     <FileUpload
-      onFilesUploaded={(data: any) => setFileUrlData(data)}
+      onFilesUploaded={(data: any) => setFileUrlListData(data)}
       onContinue={() => setCanvasViewOpen(true)}
     />
   );

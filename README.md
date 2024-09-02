@@ -1,6 +1,6 @@
 # CAD Design Visualizer
 
-This repository is used to generate prototypes to visualize individual components of any CAD design in formats such as STEP, STL, and FBX. The application includes a save feature, allowing users to store and revisit all previously created designs.
+This repository is used to generate prototypes to visualize individual components of any CAD design in formats such as STL, OBJ and FBX. The application includes a save feature, allowing users to store and revisit all previously created designs.
 
 ## Technologies Used
 
@@ -15,7 +15,7 @@ This repository is used to generate prototypes to visualize individual component
 
 ## Features
 
-- **Visualize CAD Designs**: Upload and visualize CAD files in STEP, STL, and FBX formats.
+- **Visualize CAD Designs**: Upload and visualize CAD files in STL, OBJ and FBX formats.
 - **Component Interaction**: View and interact with individual components of the uploaded CAD design.
 - **Save Renderings**: Save and store previous renderings for future reference.
 

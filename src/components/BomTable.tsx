@@ -21,7 +21,7 @@ const BomTable: React.FC<{ bom: Record<string, number> }> = ({ bom }) => {
           </TableRow>
         </TableHead>
         <TableBody>
-          {Object.entries(bom).map(([name, quantity], index) => (
+          {Object.entries(bom ?? {})?.map(([name, quantity], index) => (
             <TableRow key={index}>
               <TableCell component="th" scope="row">
                 {name}
