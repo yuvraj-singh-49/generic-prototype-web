@@ -1,26 +1,20 @@
 // @ts-nocheck
 
 import React, { useState, useEffect } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
+import { STLLoader } from "three/examples/jsm/loaders/STLLoader";
 import {
   Box,
+  Typography,
   List,
   ListItem,
   ListItemText,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Paper,
-  Typography,
   Button,
   Divider,
 } from "@mui/material";
-import axios from "axios";
 import Toast from "../Toast";
 import { extractParts, getFileType } from "../../common/methods";
 import axiosApi from "../../app/config";
@@ -42,13 +36,73 @@ interface CanvasViewProps {
   fileUrlList: any;
 }
 
+// Function to clean and validate geometry
+const cleanAndValidateGeometry = (geometry: THREE.BufferGeometry) => {
+  if (geometry.attributes.position === undefined) {
+    console.error("STL file has no position attribute.");
+    return geometry;
+  }
+
+  // Check for NaN values and replace them with zeros
+  const positions = geometry.attributes.position.array;
+  for (let i = 0; i < positions.length; i++) {
+    if (isNaN(positions[i])) {
+      console.warn(`NaN detected at index ${i}, replacing with 0.`);
+      positions[i] = 0;
+    }
+  }
+
+  geometry.attributes.position.needsUpdate = true;
+
+  // Compute the bounding box and sphere after cleaning
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+
+  return geometry;
+};
+
+// Component to adjust the camera based on the model's size
+const AutoFitCamera = ({ models }) => {
+  const { camera, controls } = useThree();
+
+  useEffect(() => {
+    if (models.length === 0) return;
+
+    const boundingBox = new THREE.Box3();
+    models.forEach((model) =>
+      model.parts.forEach((part) => {
+        if (part.geometry) boundingBox.expandByObject(part.mesh);
+      })
+    );
+
+    const center = boundingBox.getCenter(new THREE.Vector3());
+    const size = boundingBox.getSize(new THREE.Vector3());
+
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const fov = camera.fov * (Math.PI / 180);
+    let cameraZ = Math.abs(maxDim / (2 * Math.tan(fov / 2)));
+
+    cameraZ *= 1.5; // Add some padding
+    camera.position.set(center.x, center.y, cameraZ);
+
+    if (controls) {
+      controls.target.set(center.x, center.y, center.z);
+      controls.update();
+    }
+
+    camera.lookAt(center);
+  }, [models, camera, controls]);
+
+  return null;
+};
+
 // Component to render a model with its parts
 const Model: React.FC<{ model: Model; selectedPartName: string | null }> = ({
   model,
   selectedPartName,
 }) => {
   return (
-    <group rotation={[Math.PI, -Math.PI / 2, Math.PI]} scale={[0.3, 0.5, 0.5]}>
+    <group>
       {model.parts.map((part, index) => (
         <mesh
           key={index}
@@ -97,8 +151,10 @@ const CanvasView: React.FC<CanvasViewProps> = ({ fileUrlList }) => {
       setBom(completeBom);
     }
 
-    loadModels();
-  }, []);
+    if (!!fileUrlList?.length) {
+      loadModels();
+    }
+  }, [fileUrlList]);
 
   const handleRenderingSave = async () => {
     const data = JSON.stringify({
@@ -113,7 +169,7 @@ const CanvasView: React.FC<CanvasViewProps> = ({ fileUrlList }) => {
     if (response?.status === 200) {
       setToastOpen(true);
     } else {
-      console.error("Something went wrong!!!")
+      console.error("Something went wrong!!!");
     }
   };
 
@@ -196,10 +252,11 @@ const CanvasView: React.FC<CanvasViewProps> = ({ fileUrlList }) => {
       </Box>
 
       <Box width="80%" bgcolor="#000000">
-        <Canvas camera={{ position: [0, 0, 200], fov: 75 }}>
+        <Canvas camera={{ fov: 75 }}>
           <ambientLight intensity={0.5} />
           <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
           <pointLight position={[-10, -10, -10]} />
+          <AutoFitCamera models={models} />
           {models.map((model, index) => (
             <Model key={index} model={model} selectedPartName={selectedPart} />
           ))}

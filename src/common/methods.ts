@@ -48,31 +48,39 @@ async function extractParts(
   return new Promise((resolve, reject) => {
     loader.load(
       url,
-      (object: THREE.Group | THREE.BufferGeometry) => {
+      (geometry: THREE.Group | THREE.BufferGeometry) => {
         const parts: Part[] = [];
         const partMap: Record<string, number> = {}; // Object to store part counts
 
         if (fileType === "stl") {
           const material = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
-          const mesh = new THREE.Mesh(object as THREE.BufferGeometry, material);
+          const mesh = new THREE.Mesh(
+            geometry as THREE.BufferGeometry,
+            material
+          );
+          const cleanedGeometry = cleanAndValidateGeometry(geometry);
           const partName = mesh.uuid;
           partMap[partName] = partMap[partName] ? partMap[partName] + 1 : 1;
 
           parts.push({
             name: partName,
-            geometry: object as THREE.BufferGeometry,
+            geometry: cleanedGeometry as THREE.BufferGeometry,
             material: material,
             mesh: mesh,
           });
         } else {
-          (object as THREE.Group).traverse((child) => {
+          (geometry as THREE.Group).traverse((child) => {
             if ((child as THREE.Mesh).isMesh) {
+              const cleanedGeometry = cleanAndValidateGeometry(
+                (child as THREE.Mesh).geometry
+              );
+
               const partName = child.name || `Part ${parts.length + 1}`;
               partMap[partName] = partMap[partName] ? partMap[partName] + 1 : 1;
 
               parts.push({
                 name: partName,
-                geometry: (child as THREE.Mesh).geometry,
+                geometry: cleanedGeometry,
                 material: (child as THREE.Mesh).material.clone(),
                 mesh: child as THREE.Mesh,
               });
@@ -88,4 +96,29 @@ async function extractParts(
   });
 }
 
-export { getFileType, extractParts };
+// Function to clean and validate geometry
+const cleanAndValidateGeometry = (geometry: THREE.BufferGeometry) => {
+  if (geometry.attributes.position === undefined) {
+    console.error("STL file has no position attribute.");
+    return geometry;
+  }
+
+  // Check for NaN values and replace them with zeros
+  const positions = geometry.attributes.position.array;
+  for (let i = 0; i < positions.length; i++) {
+    if (isNaN(positions[i])) {
+      console.warn(`NaN detected at index ${i}, replacing with 0.`);
+      positions[i] = 0;
+    }
+  }
+
+  geometry.attributes.position.needsUpdate = true;
+
+  // Compute the bounding box and sphere after cleaning
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+
+  return geometry;
+};
+
+export { getFileType, extractParts, cleanAndValidateGeometry };
