@@ -5,11 +5,13 @@ import CanvasView from "./CanvasView";
 interface PrototypeViewProps {
   isCanvasViewOpen?: boolean;
   fileUrlList?: any;
+  savedRender?: boolean;
 }
 
 const PrototypeView: React.FC<PrototypeViewProps> = ({
   isCanvasViewOpen,
   fileUrlList,
+  savedRender,
 }) => {
   const [fileUrlListData, setFileUrlListData] = useState(fileUrlList ?? {});
   const [canvasViewOpen, setCanvasViewOpen] = useState(
@@ -17,7 +19,7 @@ const PrototypeView: React.FC<PrototypeViewProps> = ({
   );
 
   if (canvasViewOpen) {
-    return <CanvasView fileUrlList={fileUrlListData}  />;
+    return <CanvasView fileUrlList={fileUrlListData} savedRender={savedRender}  />;
   }
 
   return (

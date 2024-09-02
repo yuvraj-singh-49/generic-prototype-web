@@ -21,16 +21,24 @@ const PreviousRenders: React.FC = () => {
   const [fileUrlList, setFileUrlList] = useState<string[]>([]);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [renderToDelete, setRenderToDelete] = useState<any>(null);
-  const [toastOpen, setToastOpen] = useState(false);
+  const [toastData, setToastData] = useState({
+    open: false,
+    message: "",
+    severity: "",
+  });
 
   useEffect(() => {
     const renderTable = async () => {
-      const response = await axiosApi().get(`/api/getAll`);
+      const response: any = await axiosApi().get(`/api/getAll`);
 
       if (response?.status === 200) {
         setPreviousRenders(response?.data);
       } else {
-        console.error("Something went wrong!!!");
+        setToastData({
+          open: true,
+          message: response?.message ?? "Failed to delete the render.",
+          severity: "error",
+        });
       }
     };
 
@@ -58,31 +66,55 @@ const PreviousRenders: React.FC = () => {
     if (!renderToDelete) return;
 
     try {
-      const response = await axiosApi().delete(
+      const response = (await axiosApi().delete(
         `/api/delete/${renderToDelete._id}`
-      );
+      )) as any;
       if (response?.status === 200) {
-        setToastOpen(true);
+        setToastData({
+          open: true,
+          message: "Render Deleted Successfully!",
+          severity: "success",
+        });
         setPreviousRenders((prevRenders) =>
           prevRenders.filter(
             (render) => (render as any)._id !== renderToDelete._id
           )
         );
-        handleCloseDeleteDialog();
       } else {
-        console.error("Failed to delete the render.");
+        setToastData({
+          open: true,
+          message: response?.message ?? "Failed to delete the render.",
+          severity: "error",
+        });
       }
-    } catch (error) {
-      console.error("An error occurred while deleting the render.", error);
+    } catch (error: any) {
+      setToastData({
+        open: true,
+        message:
+          error?.message ?? "An error occurred while deleting the render.",
+        severity: "error",
+      });
     }
+
+    handleCloseDeleteDialog();
   };
 
   if (previousRenderOpen) {
-    return <PrototypeView isCanvasViewOpen={true} fileUrlList={fileUrlList} />;
+    return (
+      <PrototypeView
+        isCanvasViewOpen={true}
+        fileUrlList={fileUrlList}
+        savedRender={true}
+      />
+    );
   }
 
   const handleClose = () => {
-    setToastOpen(false);
+    setToastData({
+      open: false,
+      message: "",
+      severity: "",
+    });
   };
 
   return (
@@ -183,9 +215,9 @@ const PreviousRenders: React.FC = () => {
       />
 
       <Toast
-        open={toastOpen}
-        message="Render Deleted Successfully!"
-        severity="success"
+        open={toastData?.open}
+        message={toastData?.message}
+        severity={toastData?.severity as any}
         handleClose={handleClose}
       />
     </Box>

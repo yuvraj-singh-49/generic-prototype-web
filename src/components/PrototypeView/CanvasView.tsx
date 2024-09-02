@@ -14,6 +14,7 @@ import {
   Paper,
   Button,
   Divider,
+  CircularProgress,
 } from "@mui/material";
 import Toast from "../Toast";
 import { extractParts, getFileType } from "../../common/methods";
@@ -33,37 +34,13 @@ interface Model {
 }
 
 interface CanvasViewProps {
-  fileUrlList: any;
+  fileUrlList: string[];
+  savedRender: any;
 }
 
-// Function to clean and validate geometry
-const cleanAndValidateGeometry = (geometry: THREE.BufferGeometry) => {
-  if (geometry.attributes.position === undefined) {
-    console.error("STL file has no position attribute.");
-    return geometry;
-  }
-
-  // Check for NaN values and replace them with zeros
-  const positions = geometry.attributes.position.array;
-  for (let i = 0; i < positions.length; i++) {
-    if (isNaN(positions[i])) {
-      console.warn(`NaN detected at index ${i}, replacing with 0.`);
-      positions[i] = 0;
-    }
-  }
-
-  geometry.attributes.position.needsUpdate = true;
-
-  // Compute the bounding box and sphere after cleaning
-  geometry.computeBoundingBox();
-  geometry.computeBoundingSphere();
-
-  return geometry;
-};
-
 // Component to adjust the camera based on the model's size
-const AutoFitCamera = ({ models }) => {
-  const { camera, controls } = useThree();
+const AutoFitCamera: React.FC<{ models: Model[] }> = ({ models }) => {
+  const { camera, controls } = useThree() as any;
 
   useEffect(() => {
     if (models.length === 0) return;
@@ -97,16 +74,16 @@ const AutoFitCamera = ({ models }) => {
 };
 
 // Component to render a model with its parts
-const Model: React.FC<{ model: Model; selectedPartName: string | null }> = ({
-  model,
-  selectedPartName,
-}) => {
+const ModelComponent: React.FC<{
+  model: Model;
+  selectedPartName: string | null;
+}> = ({ model, selectedPartName }) => {
   return (
     <group>
       {model.parts.map((part, index) => (
         <mesh
           key={index}
-          geometry={part.geometry}
+          geometry={part.geometry as any}
           material={
             part.name === selectedPartName
               ? new THREE.MeshStandardMaterial({ color: 0xff0000 }) // Highlight selected part
@@ -118,11 +95,20 @@ const Model: React.FC<{ model: Model; selectedPartName: string | null }> = ({
   );
 };
 
-const CanvasView: React.FC<CanvasViewProps> = ({ fileUrlList }) => {
-  const [toastOpen, setToastOpen] = useState(false);
+const CanvasView: React.FC<CanvasViewProps> = ({
+  fileUrlList,
+  savedRender,
+}) => {
+  const [toastData, setToastData] = useState({
+    open: false,
+    message: "",
+    severity: "",
+  });
+  const [fileSaved, setFileSaved] = useState(false);
   const [models, setModels] = useState<Model[]>([]);
   const [bom, setBom] = useState<Record<string, number>>({});
   const [selectedPart, setSelectedPart] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     async function loadModels() {
@@ -143,112 +129,159 @@ const CanvasView: React.FC<CanvasViewProps> = ({ fileUrlList }) => {
               : quantity;
           }
         } catch (error) {
-          console.error(`Error loading model ${fileName}:`, error);
+          setToastData({
+            open: true,
+            message: `Error loading model ${fileName}:`,
+            severity: "error",
+          });
         }
       }
 
       setModels(loadedModels);
       setBom(completeBom);
+      setLoading(false);
     }
 
-    if (!!fileUrlList?.length) {
+    if (fileUrlList.length > 0) {
+      setLoading(true);
       loadModels();
     }
   }, [fileUrlList]);
 
   const handleRenderingSave = async () => {
     const data = JSON.stringify({
-      name: "Render No. " + parseInt(Math.random() * 10000),
+      name: "Prototype No. " + parseInt((Math.random() * 10000) as any),
       bom: bom,
       fileUrlList: fileUrlList,
       createdOn: new Date(),
     });
 
-    const response = await axiosApi().post(`/api/post`, data);
-
-    if (response?.status === 200) {
-      setToastOpen(true);
-    } else {
-      console.error("Something went wrong!!!");
+    try {
+      const response = await axiosApi().post(`/api/post`, data);
+      if (response.status === 200) {
+        setToastData({
+          open: true,
+          message: "Prototype Saved Successfully!",
+          severity: "success",
+        });
+        setFileSaved(true);
+      } else {
+        setToastData({
+          open: true,
+          message: response?.message ?? "Failed to delete the render.",
+          severity: "error",
+        });
+      }
+    } catch (error) {
+      setToastData({
+        open: true,
+        message:
+          error?.message ?? "An error occurred while deleting the render.",
+        severity: "error",
+      });
     }
   };
 
   const handleClose = () => {
-    setToastOpen(false);
+    setToastData({
+      open: false,
+      message: "",
+      severity: "",
+    });
   };
 
   return (
     <Box display="flex" height="90vh">
       <Box
         width="20%"
-        bgcolor="#f5f5f5" // Softer background color for a modern look
+        bgcolor="#f5f5f5"
         p={2}
         overflow="auto"
         sx={{
-          borderRadius: 2, // Rounded corners for a modern look
-          boxShadow: 3, // Subtle shadow for depth
+          borderRadius: 2,
+          boxShadow: 3,
         }}
       >
-        <Paper
-          elevation={0}
-          sx={{
-            padding: 2,
-            marginBottom: 2,
-            borderRadius: 2,
-            color: "#fff",
-            textAlign: "center",
-          }}
-        >
-          <Button
-            variant="contained"
+        {!savedRender ? (
+          <Paper
+            elevation={0}
             sx={{
+              padding: 2,
+              marginBottom: 2,
+              borderRadius: 2,
               color: "#fff",
-              backgroundColor: "#fe3333",
-              fontWeight: 600,
-              "&:hover": {
-                backgroundColor: "#cc2a2a",
-              },
+              textAlign: "center",
             }}
-            onClick={handleRenderingSave}
-            fullWidth
-            disabled={toastOpen}
           >
-            Save this Rendering
-          </Button>
-        </Paper>
-        <Typography
-          variant="h5"
-          gutterBottom
-          sx={{ fontWeight: 700, color: "#333" }}
-        >
-          Bill of Materials
-        </Typography>
-        <Divider sx={{ marginBottom: 2 }} />
-        <List>
-          {models.map((model, modelIndex) =>
-            model.parts.map((part, partIndex) => (
-              <ListItem
-                button
-                key={`${modelIndex}-${partIndex}`}
-                selected={part.name === selectedPart}
-                onClick={() => setSelectedPart(part.name)}
-                sx={{
-                  borderRadius: 1,
-                  marginBottom: 1,
-                  "&.Mui-selected": {
-                    backgroundColor: "#fe3333",
-                    color: "#fff",
-                  },
-                  "&.Mui-selected:hover": {
-                    backgroundColor: "#cc2a2a",
-                  },
-                }}
-              >
-                <ListItemText primary={part.name} sx={{ fontWeight: 500 }} />
-              </ListItem>
-            ))
-          )}
-        </List>
+            <Button
+              variant="contained"
+              sx={{
+                color: "#fff",
+                backgroundColor: "#fe3333",
+                fontWeight: 600,
+                "&:hover": {
+                  backgroundColor: "#cc2a2a",
+                },
+              }}
+              onClick={handleRenderingSave}
+              fullWidth
+              disabled={fileSaved || loading}
+            >
+              Save this Rendering
+            </Button>
+          </Paper>
+        ) : (
+          <></>
+        )}
+
+        {!loading && models.length > 0 && (
+          <>
+            <Typography
+              variant="h5"
+              gutterBottom
+              sx={{ fontWeight: 700, color: "#333" }}
+            >
+              Interactive Elements
+            </Typography>
+            <Divider sx={{ marginBottom: 2 }} />
+          </>
+        )}
+        {loading ? (
+          <Box
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            height="100%"
+          >
+            <CircularProgress />
+          </Box>
+        ) : (
+          <List>
+            {models.map((model, modelIndex) =>
+              model.parts.map((part, partIndex) => (
+                <ListItem
+                  button
+                  key={`${modelIndex}-${partIndex}`}
+                  selected={part.name === selectedPart}
+                  onClick={() => setSelectedPart(part.name)}
+                  sx={{
+                    borderRadius: 1,
+                    marginBottom: 1,
+                    "&.Mui-selected": {
+                      backgroundColor: "#fe3333",
+                      color: "#fff",
+                    },
+                    "&.Mui-selected:hover": {
+                      backgroundColor: "#cc2a2a",
+                    },
+                  }}
+                >
+                  <ListItemText primary={part.name} sx={{ fontWeight: 500 }} />
+                </ListItem>
+              ))
+            )}
+          </List>
+        )}
       </Box>
 
       <Box width="80%" bgcolor="#000000">
@@ -258,16 +291,20 @@ const CanvasView: React.FC<CanvasViewProps> = ({ fileUrlList }) => {
           <pointLight position={[-10, -10, -10]} />
           <AutoFitCamera models={models} />
           {models.map((model, index) => (
-            <Model key={index} model={model} selectedPartName={selectedPart} />
+            <ModelComponent
+              key={index}
+              model={model}
+              selectedPartName={selectedPart}
+            />
           ))}
           <OrbitControls />
         </Canvas>
       </Box>
 
       <Toast
-        open={toastOpen}
-        message="Render Saved Successfully!"
-        severity="success"
+        open={toastData?.open}
+        message={toastData?.message}
+        severity={toastData?.severity as any}
         handleClose={handleClose}
       />
     </Box>
