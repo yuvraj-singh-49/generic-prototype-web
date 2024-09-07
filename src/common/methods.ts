@@ -59,7 +59,7 @@ async function extractParts(
             material
           );
           const cleanedGeometry = cleanAndValidateGeometry(geometry);
-          const partName = mesh.uuid;
+          const partName = url.split("/").pop()?.split(".")?.[0] ?? mesh?.uuid;
           partMap[partName] = partMap[partName] ? partMap[partName] + 1 : 1;
 
           parts.push({

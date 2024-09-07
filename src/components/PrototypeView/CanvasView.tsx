@@ -62,14 +62,35 @@ const AutoFitCamera: React.FC<{ models: Model[] }> = ({ models }) => {
     let cameraZ = Math.abs(maxDim / (2 * Math.tan(fov / 2)));
 
     cameraZ *= 1.5; // Add some padding
+    const minDistance = maxDim * 1.2; // Set a minimum distance so it doesn't zoom in too close
+    if (cameraZ < minDistance) cameraZ = minDistance;
+
+    // Set near and far clipping planes
+    camera.near = 0.1;  // Allow objects to get close without being clipped
+    camera.far = cameraZ * 5;  // Set far enough for distant objects
+    camera.updateProjectionMatrix();
+
+    // Set camera position and target
     camera.position.set(center.x, center.y, cameraZ);
+    camera.lookAt(center);
 
     if (controls) {
       controls.target.set(center.x, center.y, center.z);
+      controls.maxDistance = cameraZ * 3; // Set max zoom out distance
+      controls.minDistance = minDistance; // Set minimum zoom in distance
+
+      // Update controls when zooming
+      controls.addEventListener('change', () => {
+        const currentDistance = camera.position.distanceTo(controls.target);
+        if (currentDistance < minDistance * 1.1) {
+          camera.fov = THREE.MathUtils.lerp(camera.fov, 45, 0.1); // Adjust FOV for zoom-in
+        } else {
+          camera.fov = THREE.MathUtils.lerp(camera.fov, 75, 0.1); // Wider FOV for zoom-out
+        }
+        camera.updateProjectionMatrix();
+      });
       controls.update();
     }
-
-    camera.lookAt(center);
   }, [models, camera, controls]);
 
   return null;

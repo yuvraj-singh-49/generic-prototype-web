@@ -16,7 +16,7 @@ const BomTable: React.FC<{ bom: Record<string, number> }> = ({ bom }) => {
       <Table>
         <TableHead>
           <TableRow>
-            <TableCell>Part Id</TableCell>
+            <TableCell>Part Name</TableCell>
             <TableCell align="right">Quantity</TableCell>
           </TableRow>
         </TableHead>
